@@ -5,6 +5,11 @@ import jax.numpy as jnp
 image_dim = 28
 
 class mnist_model(eqx.Module):
+    conv1: eqx.nn.Conv2d
+    conv2: eqx.nn.Conv2d
+    linear1: eqx.nn.Linear
+    linear2: eqx.nn.Linear
+
     def __init__(self, key):
         key1, key2, key3, key4 = jax.random.split(key, 4)
 
@@ -25,6 +30,11 @@ class mnist_model(eqx.Module):
         return x
 
 class mnist_feature_extractor(eqx.Module):
+    conv1: eqx.nn.Conv2d
+    conv2: eqx.nn.Conv2d
+    linear1: eqx.nn.Linear
+    linear2: eqx.nn.Linear
+
     def __init__(self, key):
         key1, key2, key3, key4 = jax.random.split(key, 4)
 
@@ -44,24 +54,34 @@ class mnist_feature_extractor(eqx.Module):
         return x
 
 class mnist_generator(eqx.Module):
+    linear1: eqx.nn.Linear
+    linear2: eqx.nn.Linear
+    conv1: eqx.nn.ConvTranspose2d
+    conv2: eqx.nn.ConvTranspose2d
+
     def __init__(self, key):
         key1, key2, key3, key4 = jax.random.split(key, 4)
 
         self.linear1 = eqx.nn.Linear(128, 128, key=key1)
-        self.linear2 = eqx.nn.Linear(128, 64*(image_dim-1)**2, key=key2)
-        self.conv1 = eqx.nn.ConvTranspose2d(64, 32, 3, 1, key=key3)
-        self.conv2 = eqx.nn.ConvTranspose2d(32, 1, 3, 1, key=key4)
+        self.linear2 = eqx.nn.Linear(128, 64*image_dim**2, key=key2)
+        self.conv1 = eqx.nn.ConvTranspose2d(64, 32, 3, 1, padding=1, key=key3)
+        self.conv2 = eqx.nn.ConvTranspose2d(32, 1, 3, 1, padding=1, key=key4)
 
     def __call__(self, x):
         x = jax.nn.relu(self.linear1(x))
         x = jax.nn.relu(self.linear2(x))
-        x = x.reshape((-1, 64, image_dim-1, image_dim-1))
+        x = x.reshape((64, image_dim, image_dim))
         x = jax.nn.relu(self.conv1(x))
-        x = jax.nn.relu(self.conv2(x))
+        x = jax.nn.sigmoid(self.conv2(x))
 
         return x
 
 class mnist_diffusion(eqx.Module):
+    feature_extractor: mnist_feature_extractor
+    label_embedding: eqx.nn.Embedding
+    generator: mnist_generator
+    time_embedding: eqx.nn.Embedding
+
     def __init__(self, key):
         key1, key2, key3, key4 = jax.random.split(key, 4)
 
