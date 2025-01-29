@@ -3,29 +3,17 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 from model import mnist_diffusion
 from dataloader import batch_size, dataloader_train, dataloader_test
-
-class Accumulator:
-    def __init__(self):
-        self.data = 0
-        self.count = 0
-
-    def update(self, data):
-        self.data += data
-        self.count += 1
-
-    def __call__(self):
-        return self.data/self.count
+from utils import Accumulator, display_batch
 
 @eqx.filter_jit
 def loss_fn(model, x, label, t, img):
     output = jax.vmap(model)(x, label, t)
     mse = jnp.mean(optax.losses.squared_error(output, img))
     sharpness = jnp.mean(-jnp.abs(output-0.5))
-    loss = mse + 0.1*sharpness
+    loss = mse + 0.05*sharpness
 
     return loss
 
@@ -49,29 +37,6 @@ def epoch_train(model, train_loader, optimizer, optimizer_state, loss_fn):
 
     return model, optimizer_state
 
-def display_batch(model, x, label, t, img, length=5):
-    '''
-    display the first `length` images in the batch, both the original, corrupted and the reconstruction
-    '''
-    recu = jax.vmap(model)(x, label, t)
-
-    fig, ax = plt.subplots(3, length, figsize=(15, 5))
-
-    for i in range(length):
-        ax[0, i].imshow(img[i].reshape(28, 28), cmap='gray')
-        ax[0, i].axis('off')
-        ax[0, i].set_title('Original')
-
-        ax[1, i].imshow(x[i].reshape(28, 28), cmap='gray')
-        ax[1, i].axis('off')
-        ax[1, i].set_title('Corrupted')
-
-        ax[2, i].imshow(recu[i].reshape(28, 28), cmap='gray')
-        ax[2, i].axis('off')
-        ax[2, i].set_title('Reconstruction')
-
-    plt.show()
-
 def validate(model, loader, loss_fn):
     model = eqx.nn.inference_mode(model)
     progress_bar = tqdm(total=len(loader._data_source)//batch_size)
@@ -88,9 +53,10 @@ def validate(model, loader, loss_fn):
 
 def train_model(model, train_loader, val_loader, num_epochs, optimizer, optimizer_state, loss_fn):
     for epoch in range(num_epochs):
-        validate(model, val_loader, loss_fn)
         model, optimizer_state = epoch_train(model, train_loader, optimizer, optimizer_state, loss_fn)
+        validate(model, val_loader, loss_fn)
 
+        eqx.tree_serialise_leaves('diffusion_model.eqx', model)
 
 if __name__ == '__main__':
     num_epochs = 10
