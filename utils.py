@@ -35,3 +35,13 @@ def display_batch(model, x, label, t, img, length=5):
         ax[2, i].set_title('Reconstruction')
 
     plt.show()
+
+def diffuse(model, label, max_t):
+    guassian_noise = jax.random.normal(jax.random.PRNGKey(0), (1, 28, 28))
+    img = model(guassian_noise, label, max_t)
+
+    plt.figure(figsize=(5, 5))
+    plt.imshow(img.reshape(28, 28), cmap='gray')
+    plt.axis('off')
+    plt.title(f'Diffusion of label {label}')
+    plt.show()
