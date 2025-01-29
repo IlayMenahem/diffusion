@@ -1,0 +1,5 @@
+jax-metal
+equinox
+optax
+grain
+torchvision
