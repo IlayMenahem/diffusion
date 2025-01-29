@@ -1,5 +1,7 @@
-jax-metal
+jax
 equinox
 optax
 grain
 torchvision
+tqdm
+matplotlib
