@@ -18,6 +18,7 @@ class mnist_model(eqx.Module):
         self.linear1 = eqx.nn.Linear(64*(image_dim-1)**2, 128, key=key3)
         self.linear2 = eqx.nn.Linear(128, 10, key=key4)
 
+    @jax.jit
     def __call__(self, x):
         x = jax.nn.relu(self.conv1(x))
         x = jax.nn.relu(self.conv2(x))
@@ -43,6 +44,7 @@ class mnist_feature_extractor(eqx.Module):
         self.linear1 = eqx.nn.Linear(64*(image_dim-1)**2, 128, key=key3)
         self.linear2 = eqx.nn.Linear(128, 128, key=key4)
 
+    @jax.jit
     def __call__(self, x):
         x = jax.nn.relu(self.conv1(x))
         x = jax.nn.relu(self.conv2(x))
@@ -67,6 +69,7 @@ class mnist_generator(eqx.Module):
         self.conv1 = eqx.nn.ConvTranspose2d(64, 32, 3, 1, padding=1, key=key3)
         self.conv2 = eqx.nn.ConvTranspose2d(32, 1, 3, 1, padding=1, key=key4)
 
+    @jax.jit
     def __call__(self, x):
         x = jax.nn.relu(self.linear1(x))
         x = jax.nn.relu(self.linear2(x))
@@ -90,6 +93,7 @@ class mnist_diffusion(eqx.Module):
         self.generator = mnist_generator(key3)
         self.time_embedding = eqx.nn.Embedding(50, 128, key=key4)
 
+    @jax.jit
     def __call__(self, x, label, time):
         x = self.feature_extractor(x)
         label_embedding = self.label_embedding(label)
