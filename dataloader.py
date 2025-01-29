@@ -2,15 +2,19 @@ import grain.python as pygrain
 import jax.numpy as jnp
 from torchvision.datasets import MNIST
 import jax
-import optax
 
-def get_alpha_bar(t, max_t):
-    schedule = optax.schedules.cosine_decay_schedule(1.0, max_t)
-    betas = jax.vmap(schedule)(jnp.arange(max_t))
-    alphas = 1 - betas
-    alpha_bar = jnp.cumprod(alphas)[-1]
+def schedule(t, max_t, s=0.008):
+    max_t = jnp.linspace(0, 1, max_t)
+    f_t = jnp.cos((max_t + s) / (1 + s) * jnp.pi / 2) ** 2
+    alpha_bar_t = f_t / f_t[0]
+    beta_t = 1 - alpha_bar_t[1:] / alpha_bar_t[:-1]
+    beta_t = jnp.clip(beta_t, 0, 0.999)
+    beta_t = jnp.concatenate([jnp.array([0.0]), beta_t])
 
-    return alpha_bar
+    alpha_t = 1 - beta_t
+    alpha_bar_t = jnp.cumprod(alpha_t)[t]
+
+    return alpha_bar_t
 
 class DiffusionDataset:
     def __init__(self, data_dir, key, max_t, train):
@@ -35,7 +39,7 @@ class DiffusionDataset:
         self.key, key1, key2 = jax.random.split(self.key, 3)
         t = jax.random.randint(key1, shape=(), minval=0, maxval=self.max_t)
         gaussian_noise = jax.random.normal(key2, img.shape)
-        alpha_bar = get_alpha_bar(t, self.max_t)
+        alpha_bar = schedule(t, self.max_t)
 
         x = jnp.sqrt(alpha_bar)*img + jnp.sqrt(1-alpha_bar)*gaussian_noise
 
