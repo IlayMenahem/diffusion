@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 from tqdm import tqdm
 
-from model import mnist_diffusion
+from model import mnist_unet
 from dataloader import batch_size, dataloader_train, dataloader_test
 from utils import Accumulator
 
@@ -12,8 +12,7 @@ from utils import Accumulator
 def loss_fn(model, x, label, t, img):
     output = jax.vmap(model)(x, label, t)
     mse = jnp.mean(optax.losses.squared_error(output, img))
-    sharpness = jnp.mean(-jnp.abs(output-0.5))
-    loss = mse + 0.05*sharpness
+    loss = mse
 
     return loss
 
@@ -69,7 +68,7 @@ if __name__ == '__main__':
     num_epochs = 10
     key = jax.random.key(0)
     key, subkey = jax.random.split(key)
-    model = mnist_diffusion(subkey)
+    model = mnist_unet(subkey)
 
     learning_rate = 1e-4
     optimizer = optax.adam(learning_rate)
