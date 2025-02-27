@@ -18,14 +18,9 @@ def schedule(t, max_t, s=0.008):
 
 class DiffusionDataset:
     def __init__(self, data_dir, key, max_t, train):
-        self.data_dir = data_dir
-        self.train = train
         self.key = key
         self.max_t = max_t
-        self.load_data()
-
-    def load_data(self):
-        self.dataset = MNIST(self.data_dir, download=True, train=self.train)
+        self.dataset = MNIST(data_dir, download=True, train=train)
 
     def __len__(self):
         return len(self.dataset)
@@ -47,12 +42,7 @@ class DiffusionDataset:
 
 class Dataset:
     def __init__(self, data_dir, train=True):
-        self.data_dir = data_dir
-        self.train = train
-        self.load_data()
-
-    def load_data(self):
-        self.dataset = MNIST(self.data_dir, download=True, train=self.train)
+        self.dataset = MNIST(data_dir, download=True, train=train)
 
     def __len__(self):
         return len(self.dataset)

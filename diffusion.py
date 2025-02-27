@@ -6,7 +6,18 @@ from tqdm import tqdm
 
 from model import mnist_unet
 from dataloader import batch_size, dataloader_train, dataloader_test
-from utils import Accumulator
+
+class Accumulator:
+    def __init__(self):
+        self.data = 0
+        self.count = 0
+
+    def update(self, data):
+        self.data += data
+        self.count += 1
+
+    def __call__(self):
+        return self.data/self.count
 
 @eqx.filter_jit
 def loss_fn(model, x, label, t, img):
